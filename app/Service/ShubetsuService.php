@@ -18,7 +18,7 @@ class ShubetsuService
             '高等専門学校' => 4,
             '専門学校' => 5,
             '高等学校' => 6,
-            default => 0,
+            default => 2,
         };
     }
 }
