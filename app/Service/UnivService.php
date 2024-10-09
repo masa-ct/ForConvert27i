@@ -99,18 +99,6 @@ class UnivService
         DB::connection('mysql')->reconnect();
     }
 
-    private static function getDnameDcode(int $shubetsu_code, string $gakkoumei, string $na_bu)
-    {
-        // ここに処理を書く
-        // 学校内で指定された系統に該当する学部を取得する
-        return DB::connection('mysql')->table('univ')
-            ->where('kubun_dai', $shubetsu_code)
-            ->where('na_dai', $gakkoumei)
-            ->where('na_bu', $na_bu)
-            ->orderBy('cd_pax', 'desc')
-            ->first();
-    }
-
     private static function hasGakkoMei(int $shubetsu_code, string $gakkoumei): bool
     {
         // ここに処理を書く
@@ -223,7 +211,7 @@ class UnivService
         return $rtn;
     }
 
-    private function setKobetsuData(array &$predata, $record)
+    private function setKobetsuData(array &$predata, $record): void
     {
         $predata['paxcd'] = $record->cd_pax;
         $predata['dcd'] = $record->cd_dai;
