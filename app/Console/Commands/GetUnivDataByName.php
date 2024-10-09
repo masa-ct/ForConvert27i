@@ -38,7 +38,6 @@ class GetUnivDataByName extends Command
         $univ_service = new UnivService();
         $mast_school_data = $univ_service->getUnivDataByShubetsuMajorName($shubetsu_mei, $gakkou_mei, $senkou_mei);   // 学校種別・専攻名・学校名で学校データを取得する
 
-
         dd($mast_school_data);
         $record_count = $univ_service->getUnivDataCount($shubetsu_code, $senko_code, $gakkou_mei);   // 学校種別・学校名・専攻名で学部データを取得する
         if ($record_count ==! 0) {
