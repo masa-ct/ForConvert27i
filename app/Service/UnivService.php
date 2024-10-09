@@ -155,56 +155,80 @@ class UnivService
     }
 
 
-    public function getUnivDataByShubetsuMajorName(int $shubetsu_code, int $senko_code, string $gakkoumei)
+    public function getUnivDataByShubetsuMajorName(string $shubetsu_mei,  string $gakkou_mei,string $senkou_mei): array
     {
+        // 学校種別と専攻のコード化
+        $shubetsu_code = ShubetsuService::getShubetsuCode($shubetsu_mei);
+
         // まずは回答した学校種別の「その他」を設定する
         $predata = self::getBaseData($shubetsu_code);
-        // 学校内で指定された系統に該当する学部を取得する
-        // 学校名で該当するものがあれば、専攻から学部を取得する
-        if (self::hasGakkoMei($shubetsu_code, $gakkoumei)) {
-            // 学校名で取得
-            $gakko = DB::connection('mysql')->table('univ')
-                ->where('na_dai', $gakkoumei)
-                ->where('kubun_dai', $shubetsu_code)
-                ->orderby('cd_pax', 'desc')
-                ->first();
-            $record = DB::connection('mysql')->table('univ')
-                ->where('na_dai', $gakkoumei)
-                ->where('kubun_dai', $shubetsu_code)
-                ->where('cd_keito', $senko_code)
-                ->groupBy('na_bu')
-                ->get('na_bu');
-            // データのない場合はそのまま何もしない
-            if (!$record) {
-                return $predata;
-            }
-            // データが1件のみの場合はその学部の区分を反映させる
-            if ($record->count() == 1) {
-                $na_bu = $record->first()->na_bu;
-                $record = self::getDnameDcode($shubetsu_code, $gakkoumei, $na_bu);
-                $predata['paxcd'] = $record->cd_pax;
-                $predata['dcd'] = $record->cd_dai;
-                $predata['dname'] = $record->na_dai;
-                $predata['bname'] = $record->na_bu;
-                $predata['bunri'] = $record->kubun_bunri;
-                $predata['kokushi'] = $record->kubun_ritsu;
-                $predata['kubun'] = $record->kubun_dai;
-                $predata['gakkei'] = $record->cd_keito;
-                $predata['lank'] = $record->cd_lank;
-                $predata['joshi'] = $record->kubun_joshi;
-                return $predata;
-            }
 
-            // データが複数ある場合は学部名を/でつないで名称に入れるが区分はそのままにする
-            if ($record->count() > 1) {
-                $bu_na = [];
-                foreach ($record as $rec) {
-                    $bu_na[] = $rec->na_bu;
+        // 学校種別コードと学校名で学校データを取得する
+        if ($this->hasGakkoMei($shubetsu_code, $gakkou_mei)) {
+            // 該当するものがあれば、その他としていたものを上書きする
+            $record = $this->getUnivDataSonota($shubetsu_code, $gakkou_mei);
+            $predata['paxcd'] = $record->cd_pax;
+            $predata['dcd'] = $record->cd_dai;
+            $predata['dname'] = $record->na_dai;
+            $predata['kubun'] = $record->kubun_dai;
+            $predata['bunri'] = $record->kubun_bunri;
+            $predata['lank'] = $record->cd_lank;
+            $predata['joshi'] = $record->kubun_joshi;
+        } else {
+            // 該当するものがなければ、学校名を編集して検索する
+            $edited_gakkoumei = $this->editGakkoumei($shubetsu_code, $gakkou_mei);
+            foreach ($edited_gakkoumei as $gakkoumei) {
+                if ($this->hasGakkoMei($shubetsu_code, $gakkoumei)) {
+                    $record = $this->getUnivDataSonota($shubetsu_code, $gakkoumei);
+                    if ($record == null) {
+                        continue;
+                    }else{
+                        $predata['paxcd'] = $record->cd_pax;
+                        $predata['dcd'] = $record->cd_dai;
+                        $predata['dname'] = $record->na_dai;
+                        $predata['kubun'] = $record->kubun_dai;
+                        $predata['bunri'] = $record->kubun_bunri;
+                        $predata['lank'] = $record->cd_lank;
+                        $predata['joshi'] = $record->kubun_joshi;
+                        break;
+                    }
                 }
-                $predata['na_bu'] = implode('/', $bu_na);
-                dd($predata);
-                return $predata;
             }
         }
+        return $predata;
+    }
+
+    private function getUnivDataSonota(int $shubetsu_code, string $gakkou_mei)
+    {
+        // ここに処理を書く
+        // 学校種別と学校名で降順にして最初のデータを取得する（学部不明、学科不明を取得する想定）
+        return DB::connection('mysql')->table('univ')
+            ->where('kubun_dai', $shubetsu_code)
+            ->where('na_dai', $gakkou_mei)
+            ->orderBy('cd_pax', 'desc')
+            ->first(['cd_pax', 'cd_dai', 'na_dai', 'kubun_dai', 'kubun_ritsu', 'kubun_bunri', 'cd_keito', 'cd_lank', 'kubun_joshi']);
+    }
+
+    private function editGakkoumei(int $shubetsu_code, string $gakkou_mei): array
+    {
+        $gakkou_mei_original = $gakkou_mei;
+        $rtn=[];
+        // 学校種別が大学院で学校名の最後に「〇〇大学院」と入っている場合は除外する
+        if ($shubetsu_code == 1) {
+            if (preg_match('/(専門職大学院|知的財産専門職大学院|会計職大学院|法科大学院|教職大学院|大学院)$/', $gakkou_mei)) {
+                $gakkou_mei = preg_replace('/大学院$/', '', $gakkou_mei);
+                $rtn[] = $gakkou_mei;
+            }
+        }
+        if ($gakkou_mei=='慶応義塾大学') {
+            $gakkou_mei = '慶應義塾大学';
+            $rtn[] = $gakkou_mei;
+        }
+        if ($gakkou_mei=='国学院大学') {
+            $gakkou_mei = '國學院大學';
+            $rtn[] = $gakkou_mei;
+        }
+
+        return $rtn;
     }
 }

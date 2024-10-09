@@ -9,7 +9,7 @@ class ShubetsuService
     {
     }
 
-    public function getShubetsuCode(string $shubetsu): int
+    public static function getShubetsuCode(string $shubetsu): int
     {
         return match ($shubetsu) {
             '大学院（博士）', '大学院（修士）', '大学院（MBA/MOT）', '大学院（法科）', '大学院（その他専門職）' => 1,

@@ -9,7 +9,7 @@ class SenkoService
     {
     }
 
-    public function getSenkoCode(string $senkoumei): int
+    public static function getSenkoCode(string $senkoumei): int
     {
         return match ($senkoumei) {
             '語学' => 203,
