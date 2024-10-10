@@ -50,6 +50,11 @@ class GetResults extends Command
             if ($shubetsu  === '' || $dname  === '') {
                 continue;
             }
+            // 学校種別「高校」「海外の学校」「海外学校」「海外大学」は除外
+            if (in_array($shubetsu, ['高校', '海外の学校', '海外学校', '海外大学'])) {
+                continue;
+            }
+
             $senkou_mei = $senkou_service->getSenkouMei();   // 専攻名をランダムに返す
             // 学校データを取得する
             $mast_school_data = $univ_service->getUnivDataByShubetsuMajorName($shubetsu, $dname, $senkou_mei);   // 学校種別・専攻名・学校名で学校データを取得する

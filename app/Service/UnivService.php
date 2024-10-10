@@ -195,7 +195,7 @@ class UnivService
         // 学校種別が大学院で学校名の最後に「〇〇大学院」と入っている場合は除外する
         if ($shubetsu_code == 1) {
             if (preg_match('/(専門職大学院|知的財産専門職大学院|会計職大学院|法科大学院|教職大学院|大学院)$/', $gakkou_mei)) {
-                $gakkou_mei = preg_replace('/大学院$/', '', $gakkou_mei);
+                $gakkou_mei = preg_replace('/(専門職大学院|知的財産専門職大学院|会計職大学院|法科大学院|教職大学院|大学院)$/', '', $gakkou_mei);
                 $rtn[] = $gakkou_mei;
             }
         }
@@ -203,11 +203,28 @@ class UnivService
             $gakkou_mei = '慶應義塾大学';
             $rtn[] = $gakkou_mei;
         }
-        if ($gakkou_mei == '国学院大学') {
+        if ($gakkou_mei == '国学院大学' || $gakkou_mei=='國學院大学') {
             $gakkou_mei = '國學院大學';
             $rtn[] = $gakkou_mei;
         }
-
+        if ($gakkou_mei == '東京藝術大学') {
+            $gakkou_mei = '東京芸術大学';
+            $rtn[] = $gakkou_mei;
+        }
+        if ($gakkou_mei == '駒沢大学') {
+            $gakkou_mei = '駒澤大学';
+            $rtn[] = $gakkou_mei;
+        }
+        // 北海道教育大学の後ろに校名が入っている場合は除外する
+        if (preg_match( '/^北海道教育大学（.+校）$/',$gakkou_mei)) {
+            $gakkou_mei = '北海道教育大学';
+            $rtn[] = $gakkou_mei;
+        }
+        // 最後が「大」で終わっている場合は「大学」にする
+        if (preg_match('/大$/', $gakkou_mei)) {
+            $gakkou_mei = preg_replace('/大$/', '大学', $gakkou_mei);
+            $rtn[] = $gakkou_mei;
+        }
         return $rtn;
     }
 
